@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>$id$</id>
+    <id>OutcoldSolutions.SQLite</id>
     <version>$version$</version>
     <authors>outcoldman</authors>
     <owners>$author$</owners>
@@ -11,6 +11,6 @@
     <description>$description$</description>
     <releaseNotes>Pre-release version.</releaseNotes>
     <copyright>OutcoldSolutions. All rights reserved.</copyright>
-    <tags>SQLite, WindowsRT, Windows Runtime</tags>
+    <tags>SQLite, Windows</tags>
   </metadata>
 </package>

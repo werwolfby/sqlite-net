@@ -6,7 +6,7 @@ using System.Resources;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("OutcoldSolutions.SQLite")]
-[assembly: AssemblyDescription("SQLite Windows Runtime library.")]
+[assembly: AssemblyDescription("SQLite Windows library.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("OutcoldSolutions")]
 [assembly: AssemblyProduct("OutcoldSolutions SQLite")]
