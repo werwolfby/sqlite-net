@@ -1,19 +1,16 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>OutcoldSolutions.SQLite</id>
-    <version>1.0.31003.0</version>
-    <authors>OutcoldSolutions</authors>
-    <owners>OutcoldSolutions</owners>
+    <id>$id$</id>
+    <version>$version$</version>
+    <authors>outcoldman</authors>
+    <owners>$author$</owners>
     <licenseUrl>https://github.com/outcoldman/sqlite-net/blob/master/license.md</licenseUrl>
     <projectUrl>https://github.com/outcoldman/sqlite-net/</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>SQLite Windows Runtime library.</description>
+    <description>$description$</description>
     <releaseNotes>Pre-release version.</releaseNotes>
     <copyright>OutcoldSolutions. All rights reserved.</copyright>
     <tags>SQLite, WindowsRT, Windows Runtime</tags>
   </metadata>
-  <files>
-    <!-- Already in: <file src="OutcoldSolutions.SQLite.dll" target="lib\win\OutcoldSolutions.SQLite.dll" /> -->
-  </files>
 </package>
