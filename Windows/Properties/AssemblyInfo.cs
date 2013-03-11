@@ -11,7 +11,7 @@ using System.Resources;
 [assembly: AssemblyCompany("OutcoldSolutions")]
 [assembly: AssemblyProduct("OutcoldSolutions SQLite")]
 [assembly: AssemblyCopyright("\x00a9 OutcoldSolutions. All rights reserved.")]
-[assembly: AssemblyCulture("en-us")]
+[assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguage("en")]
 
 // Version information for an assembly consists of the following four values:
