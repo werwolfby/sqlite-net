@@ -2016,7 +2016,13 @@ namespace SQLite
 				if (clrType == typeof(String)) {
 					return SQLite3.ColumnString (stmt, index);
 				} else if (clrType == typeof(Uri)) {
-					return new Uri(SQLite3.ColumnString (stmt, index));
+				    var columnString = SQLite3.ColumnString(stmt, index);
+                    if (string.IsNullOrEmpty(columnString))
+                    {
+                        return null;
+                    }
+
+                    return new Uri(columnString);
                 } else if (clrType == typeof(Int32)) {
 					return (int)SQLite3.ColumnInt (stmt, index);
 				} else if (clrType == typeof(Boolean)) {
