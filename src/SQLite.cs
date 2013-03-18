@@ -1457,6 +1457,11 @@ namespace SQLite
 		}
 	}
 
+    [AttributeUsage(AttributeTargets.Property)]
+    public class ReferenceAttribute : Attribute
+    {
+    }
+
 	public class TableMapping
 	{
 		public Type MappedType { get; private set; }
@@ -1472,6 +1477,7 @@ namespace SQLite
 		Column _autoPk;
 		Column[] _insertColumns;
 		Column[] _insertOrReplaceColumns;
+        Dictionary<string, PropertyInfo> _references = new Dictionary<string, PropertyInfo>();
 
         public TableMapping(Type type, CreateFlags createFlags = CreateFlags.None)
 		{
@@ -1496,12 +1502,16 @@ namespace SQLite
 			var cols = new List<Column> ();
 			foreach (var p in props) {
 #if !NETFX_CORE
+                var reference = p.GetCustomAttributes (typeof(ReferenceAttribute), true).Length > 0;
 				var ignore = p.GetCustomAttributes (typeof(IgnoreAttribute), true).Length > 0;
 #else
-				var ignore = p.GetCustomAttributes (typeof(IgnoreAttribute), true).Count() > 0;
+                var reference = p.GetCustomAttributes<ReferenceAttribute>(inherit: true).Any();
+                var ignore = p.GetCustomAttributes<IgnoreAttribute>(inherit: true).Any();
 #endif
-				if (p.CanWrite && !ignore) {
+				if (p.CanWrite && !ignore && !reference) {
 					cols.Add (new Column (p, createFlags));
+				} else if (reference) {
+				    _references.Add(p.Name, p);
 				}
 			}
 			Columns = cols.ToArray ();
@@ -1563,6 +1573,11 @@ namespace SQLite
 			var exact = Columns.FirstOrDefault (c => c.Name == columnName);
 			return exact;
 		}
+
+        public PropertyInfo FindReference(string columnName)
+        {
+            return this._references[columnName];
+        }
 		
 		PreparedSqlLiteInsertCommand _insertCommand;
 		string _insertCommandExtra;
@@ -1852,6 +1867,15 @@ namespace SQLite
 			// Can be overridden.
 		}
 
+        private class ColumnMapping
+        {
+            public TableMapping.Column Column { get; set; }
+
+            public bool IsReference { get; set; }
+
+            public PropertyInfo ReferenceProperty { get; set; }
+        }
+
 		public IEnumerable<T> ExecuteDeferredQuery<T> (TableMapping map)
 		{
 			if (_conn.Trace) {
@@ -1861,22 +1885,53 @@ namespace SQLite
 			var stmt = Prepare ();
 			try
 			{
-				var cols = new TableMapping.Column[SQLite3.ColumnCount (stmt)];
+                var cols = new ColumnMapping[SQLite3.ColumnCount(stmt)];
 
 				for (int i = 0; i < cols.Length; i++) {
+                    cols[i] = new ColumnMapping();
 					var name = SQLite3.ColumnName16 (stmt, i);
-					cols [i] = map.FindColumn (name);
+					cols [i].Column = map.FindColumn (name);
+
+                    if (cols[i].Column == null){
+                        int nameSeparator = name.IndexOf(".", StringComparison.OrdinalIgnoreCase);
+                        if (nameSeparator >= 0)
+                        {
+                            var propertyReference = map.FindReference(name.Substring(0, nameSeparator));
+                            var referenceMapping = _conn.GetMapping(propertyReference.PropertyType);
+                            if (referenceMapping != null)
+                            {
+                                cols[i].IsReference = true;
+                                cols[i].ReferenceProperty = propertyReference;
+                                cols[i].Column = referenceMapping.FindColumn(name.Substring(nameSeparator + 1));
+                            }
+                        }
+                    }
 				}
 			
 				while (SQLite3.Step (stmt) == SQLite3.Result.Row) {
 					var obj = Activator.CreateInstance(map.MappedType);
 					for (int i = 0; i < cols.Length; i++) {
-						if (cols [i] == null)
-							continue;
-						var colType = SQLite3.ColumnType (stmt, i);
-						var val = ReadCol (stmt, i, colType, cols [i].ColumnType);
-						cols [i].SetValue (obj, val);
- 					}
+                        if (cols[i].Column == null)
+                        {
+                            continue;
+                        }
+
+					    var currentObj = obj;
+
+                        var colType = SQLite3.ColumnType(stmt, i);
+                        var val = ReadCol(stmt, i, colType, cols[i].Column.ColumnType);
+
+                        if (cols[i].IsReference)
+                        {
+                            currentObj = cols[i].ReferenceProperty.GetValue(obj, null);
+                            if (currentObj == null)
+                            {
+                                cols[i].ReferenceProperty.SetValue(obj, currentObj = Activator.CreateInstance(cols[i].ReferenceProperty.PropertyType), null);
+                            }
+                        }
+
+                        cols[i].Column.SetValue(currentObj, val);
+					}
 					OnInstanceCreated (obj);
 					yield return (T)obj;
 				}

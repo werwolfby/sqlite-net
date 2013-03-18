@@ -33,6 +33,7 @@ namespace SQLite.Tests
 		public int OrderId { get; set; }
 		public DateTime Time { get; set; }
 		public string Comment { get; set; }
+       
 	}
 	public class OrderLine
 	{
@@ -45,6 +46,8 @@ namespace SQLite.Tests
 		public int Quantity { get; set; }
 		public decimal UnitPrice { get; set; }
 		public OrderLineStatus Status { get; set; }
+        [Reference]
+        public Order Order { get; set; }
 	}
 	public enum OrderLineStatus {
 		Placed = 1,
