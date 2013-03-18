@@ -1869,11 +1869,13 @@ namespace SQLite
 
         private class ColumnMapping
         {
+            public string ColumnName { get; set; }
+
             public TableMapping.Column Column { get; set; }
 
             public bool IsReference { get; set; }
 
-            public PropertyInfo ReferenceProperty { get; set; }
+            public PropertyInfo Property { get; set; }
         }
 
 		public IEnumerable<T> ExecuteDeferredQuery<T> (TableMapping map)
@@ -1889,21 +1891,25 @@ namespace SQLite
 
 				for (int i = 0; i < cols.Length; i++) {
                     cols[i] = new ColumnMapping();
-					var name = SQLite3.ColumnName16 (stmt, i);
-					cols [i].Column = map.FindColumn (name);
+                    cols[i].ColumnName = SQLite3.ColumnName16(stmt, i);
+                    cols[i].Column = map.FindColumn(cols[i].ColumnName);
 
                     if (cols[i].Column == null){
-                        int nameSeparator = name.IndexOf(".", StringComparison.OrdinalIgnoreCase);
+                        int nameSeparator = cols[i].ColumnName.IndexOf(".", StringComparison.OrdinalIgnoreCase);
                         if (nameSeparator >= 0)
                         {
-                            var propertyReference = map.FindReference(name.Substring(0, nameSeparator));
+                            var propertyReference = map.FindReference(cols[i].ColumnName.Substring(0, nameSeparator));
                             var referenceMapping = _conn.GetMapping(propertyReference.PropertyType);
                             if (referenceMapping != null)
                             {
                                 cols[i].IsReference = true;
-                                cols[i].ReferenceProperty = propertyReference;
-                                cols[i].Column = referenceMapping.FindColumn(name.Substring(nameSeparator + 1));
+                                cols[i].Property = propertyReference;
+                                cols[i].Column = referenceMapping.FindColumn(cols[i].ColumnName.Substring(nameSeparator + 1));
                             }
+                        }
+                        else 
+                        {
+                            cols[i].Property = map.MappedType.GetTypeInfo().GetDeclaredProperty(cols[i].ColumnName);
                         }
                     }
 				}
@@ -1911,22 +1917,27 @@ namespace SQLite
 				while (SQLite3.Step (stmt) == SQLite3.Result.Row) {
 					var obj = Activator.CreateInstance(map.MappedType);
 					for (int i = 0; i < cols.Length; i++) {
+                        var colType = SQLite3.ColumnType(stmt, i);
+                        
                         if (cols[i].Column == null)
                         {
+                            if (cols[i].Property != null)
+                            {
+                                cols[i].Property.SetValue(obj, ReadCol(stmt, i, colType, cols[i].Property.PropertyType), null);
+                            }
+
                             continue;
                         }
 
-					    var currentObj = obj;
-
-                        var colType = SQLite3.ColumnType(stmt, i);
                         var val = ReadCol(stmt, i, colType, cols[i].Column.ColumnType);
+					    var currentObj = obj;
 
                         if (cols[i].IsReference)
                         {
-                            currentObj = cols[i].ReferenceProperty.GetValue(obj, null);
+                            currentObj = cols[i].Property.GetValue(obj, null);
                             if (currentObj == null)
                             {
-                                cols[i].ReferenceProperty.SetValue(obj, currentObj = Activator.CreateInstance(cols[i].ReferenceProperty.PropertyType), null);
+                                cols[i].Property.SetValue(obj, currentObj = Activator.CreateInstance(cols[i].Property.PropertyType), null);
                             }
                         }
 
