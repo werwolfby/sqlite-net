@@ -45,6 +45,7 @@
     <Compile Include="BooleanTest.cs" />
     <Compile Include="..\src\SQLite.cs" />
     <Compile Include="ByteArrayTest.cs" />
+    <Compile Include="CompositePrimaryKeyTest.cs" />
     <Compile Include="ExceptionAssert.cs" />
     <Compile Include="InsertTest.cs" />
     <Compile Include="CreateTableTest.cs" />
