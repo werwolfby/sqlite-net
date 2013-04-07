@@ -1750,7 +1750,7 @@ namespace SQLite
                 {
                     Indices = new IndexedAttribute[] { new IndexedAttribute() };
                 }
-                IsNullable = !IsPK;
+                IsNullable = !IsPK && (Nullable.GetUnderlyingType(prop.PropertyType) != null);
             }
 
 			public void SetValue (object obj, object val)
