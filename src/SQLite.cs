@@ -1798,12 +1798,14 @@ namespace SQLite
                 || clrType == typeof(ulong))
             {
 				return "integer";
-			} else if (clrType == typeof(float) || clrType == typeof(double) || clrType == typeof(Decimal)) {
+			} else if (clrType == typeof(float) || clrType == typeof(double)) {
 				return "real";
 			} else if (clrType == typeof(String) || clrType == typeof(Uri)) {
 				return "text";
             } else if (clrType == typeof(TimeSpan)) {
                 return "integer";
+			} else if (clrType == typeof(Decimal)) {
+				return "bigint";
 			} else if (clrType == typeof(DateTime)) {
                 return storeDateTimeAsTicks ? "integer" : "datetime";
 #if !NETFX_CORE
@@ -2118,7 +2120,9 @@ namespace SQLite
 					SQLite3.BindInt (stmt, index, (bool)value ? 1 : 0);
 				} else if (value is UInt32 || value is Int64) {
 					SQLite3.BindInt64 (stmt, index, Convert.ToInt64 (value));
-				} else if (value is Single || value is Double || value is Decimal) {
+				} else if (value is Decimal) {
+					SQLite3.BindInt64 (stmt, index, Convert.ToInt64 ((decimal)value * 100));
+				} else if (value is Single || value is Double) {
 					SQLite3.BindDouble (stmt, index, Convert.ToDouble (value));
                 } else if (value is TimeSpan) {
                     SQLite3.BindInt64(stmt, index, ((TimeSpan)value).Ticks);
@@ -2197,9 +2201,18 @@ namespace SQLite
 					return SQLite3.ColumnInt64 (stmt, index);
 				} else if (clrType == typeof(UInt32)) {
 					return (uint)SQLite3.ColumnInt64 (stmt, index);
-				} else if (clrType == typeof(decimal)) {
-					return (decimal)SQLite3.ColumnDouble (stmt, index);
-				} else if (clrType == typeof(Byte)) {
+				} else if (clrType == typeof(decimal))
+				{
+					var value = SQLite3.ColumnInt64( stmt, index );
+					unchecked
+					{
+						var convertValue = value < 0 ? -value : value;
+						var hipart = (int)(convertValue >> 32);
+						var lopart = (int)(convertValue & 0xFFFFFFFF);
+						return new decimal(lopart, hipart, 0, value < 0, 2);
+					}
+				}
+				else if (clrType == typeof(Byte)) {
 					return (byte)SQLite3.ColumnInt (stmt, index);
 				} else if (clrType == typeof(UInt16)) {
 					return (ushort)SQLite3.ColumnInt (stmt, index);
